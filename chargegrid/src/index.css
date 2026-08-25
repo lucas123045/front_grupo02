@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Base surfaces — dark, slightly blue-tinted, never pure black */
+  --color-base: #0a0b12;
+  --color-surface: #12141d;
+  --color-surface-2: #191c28;
+  --color-surface-3: #212536;
+  --color-border: #262a3a;
+  --color-border-soft: #1c1f2c;
+
+  /* Text */
+  --color-text: #f3f4f7;
+  --color-text-muted: #9296a8;
+  --color-text-faint: #5b5f70;
+
+  /* Brand accents — from FIAP/GoodWe deck */
+  --color-red: #e8362f;
+  --color-red-dim: #e8362f1a;
+  --color-magenta: #e6297f;
+  --color-magenta-dim: #e6297f1a;
+  --color-blue: #3f6fd6;
+  --color-blue-dim: #3f6fd61a;
+
+  /* Status */
+  --color-success: #2fcf8e;
+  --color-success-dim: #2fcf8e1a;
+  --color-warning: #f0a83c;
+  --color-warning-dim: #f0a83c1a;
+  --color-danger: #e8362f;
+  --color-offline: #4a4f60;
+
+  --font-display: 'Chakra Petch', 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+@keyframes flow {
+  to { stroke-dashoffset: -24; }
+}
+
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+.animate-flow { animation: flow 1.6s linear infinite; }
+.animate-pulse-soft { animation: pulse-soft 2.4s ease-in-out infinite; }
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background-color: var(--color-magenta);
+  color: white;
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-3); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-border); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
