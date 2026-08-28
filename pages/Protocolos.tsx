@@ -3,9 +3,7 @@ import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { PageContainer, PageHeader } from '../components/layout/PageContainer';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
-import { getProtocolos, type ProtocolEvent } from '../lib/api';
-
-const POLL_INTERVAL_MS = 2000;
+import { getProtocolos, subscribeToProtocolEvents, type ProtocolEvent } from '../lib/api';
 
 export default function Protocolos() {
   const [eventos, setEventos] = useState<ProtocolEvent[]>([]);
@@ -13,22 +11,28 @@ export default function Protocolos() {
 
   useEffect(() => {
     let ativo = true;
-    async function carregar() {
-      try {
-        const dados = await getProtocolos();
-        if (ativo) {
-          setEventos(dados);
-          setConectado(true);
-        }
-      } catch {
+
+    getProtocolos()
+      .then((dados) => {
+        if (ativo) setEventos(dados);
+      })
+      .catch(() => {
         if (ativo) setConectado(false);
-      }
-    }
-    carregar();
-    const id = setInterval(carregar, POLL_INTERVAL_MS);
+      });
+
+    const unsubscribe = subscribeToProtocolEvents(
+      (novoEvento) => {
+        if (!ativo) return;
+        setEventos((prev) => [novoEvento, ...prev].slice(0, 100));
+      },
+      (connected) => {
+        if (ativo) setConectado(connected);
+      },
+    );
+
     return () => {
       ativo = false;
-      clearInterval(id);
+      unsubscribe();
     };
   }, []);
 
@@ -37,13 +41,13 @@ export default function Protocolos() {
       <PageHeader
         eyebrow="OCPP 1.6-J"
         title="Protocolos"
-        description="Log de mensagens simuladas pelo backend entre o Charge Point e o Central System (SimuladorOCPP.py)."
+        description="Log de mensagens simuladas no Supabase entre o Charge Point e o Central System (tabela protocol_events, via Realtime)."
       />
 
       <Card>
         <CardHeader
           eyebrow="Conexão"
-          title="Status do backend"
+          title="Realtime do Supabase"
           action={
             <Badge tone={conectado ? 'success' : 'warning'} dot>
               {conectado ? 'Conectado' : 'Sem resposta'}
@@ -51,7 +55,8 @@ export default function Protocolos() {
           }
         />
         <p className="text-sm text-text-muted">
-          API em <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-text">/api/protocolos</code> (proxy para o FastAPI em <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-text">http://127.0.0.1:8000</code>)
+          Assinatura Postgres Changes na tabela{' '}
+          <code className="rounded bg-surface-2 px-1.5 py-0.5 font-mono text-xs text-text">protocol_events</code>
         </p>
       </Card>
 
