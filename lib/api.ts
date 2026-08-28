@@ -1,10 +1,15 @@
 // Cliente HTTP para a API FastAPI (backend/) que porta o simulador de
-// recarga do Data Structures Sprint (Equipe02-1CCPO). Em dev, o Vite faz
-// proxy de /api para http://127.0.0.1:8000 (ver vite.config.ts).
+// recarga do Data Structures Sprint (Equipe02-1CCPO).
+//
+// Em dev, o Vite faz proxy de /api para http://127.0.0.1:8000 (ver
+// vite.config.ts), então o padrão '/api' funciona sem configuração.
+// Em produção (ex: front na Vercel), não existe esse proxy — defina
+// VITE_API_URL apontando para a URL pública do backend (ex: Render),
+// incluindo o sufixo /api, ex: https://chargegrid-backend.onrender.com/api
 import type { ChargeType, ChargingSession } from '../mock/types';
 import type { DetalheTarifa, Fatura } from './tarifacao';
 
-const BASE_URL = '/api';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {

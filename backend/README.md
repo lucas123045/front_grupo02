@@ -44,4 +44,30 @@ internamente para `'1'`/`'2'`/`'3'`, como no script original).
 O estado (carros ativos/finalizados, histórico de demanda, log OCPP) é
 mantido em memória, em processo único — reinicia ao reiniciar a API. Isso é
 suficiente para o propósito de demonstração do projeto; não há persistência
-em banco de dados.
+em banco de dados. Por isso a API precisa de um processo sempre ativo — não
+roda em uma função serverless (Vercel Functions, por exemplo), que não
+mantém estado nem tarefas de fundo entre chamadas.
+
+## Deploy no Render
+
+Existe um `render.yaml` na raiz do repositório (`../render.yaml`) já
+configurado para este serviço. Passos:
+
+1. Acesse [render.com](https://render.com) e crie uma conta (dá pra usar login do GitHub).
+2. **New +** → **Blueprint** → selecione o repositório `front_grupo02`.
+   O Render lê o `render.yaml` sozinho e propõe o serviço `chargegrid-backend`
+   (plano Free, root `backend/`, build `pip install -r requirements.txt`,
+   start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`).
+3. Confirme a criação. O primeiro deploy leva alguns minutos.
+4. Quando terminar, copie a URL pública (algo como
+   `https://chargegrid-backend.onrender.com`).
+5. No projeto da Vercel (front-end), vá em **Settings → Environment
+   Variables** e adicione:
+   - `VITE_API_URL` = `https://chargegrid-backend.onrender.com/api`
+     (inclua o `/api` no final).
+6. Redeploy do front na Vercel para a variável entrar em vigor.
+
+**Importante — plano Free do Render:** o serviço "dorme" após ~15 min sem
+requisições e leva ~30-50s para acordar na próxima chamada (primeira
+requisição do front pode parecer travada nesse período). Isso é uma
+limitação do plano gratuito, não um bug da API.

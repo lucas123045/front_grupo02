@@ -21,6 +21,7 @@
   "include": [
     "App.tsx",
     "main.tsx",
+    "vite-env.d.ts",
     "vite.config.ts",
     "components",
     "context",
