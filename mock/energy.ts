@@ -16,35 +16,7 @@ export const energyFlow: EnergyFlowData = {
   homeLoadKw: 1.8,
 };
 
-export interface DemandStateData {
-  currentKw: number;
-  limitKw: number;
-  mode: 'automatico' | 'manual';
-  activeChargers: number;
-}
-
-export const demandState: DemandStateData = {
-  currentKw: 12.4,
-  limitKw: 18,
-  mode: 'automatico',
-  activeChargers: 2,
-};
-
-export interface DemandPoint {
-  time: string;
-  demandKw: number;
-  limitKw: number;
-}
-
-export const demandHistory: DemandPoint[] = [
-  { time: '06h', demandKw: 3.2, limitKw: 18 },
-  { time: '08h', demandKw: 6.8, limitKw: 18 },
-  { time: '10h', demandKw: 9.1, limitKw: 18 },
-  { time: '12h', demandKw: 11.4, limitKw: 18 },
-  { time: '14h', demandKw: 10.2, limitKw: 18 },
-  { time: '16h', demandKw: 13.6, limitKw: 18 },
-  { time: '18h', demandKw: 16.8, limitKw: 18 },
-  { time: '20h', demandKw: 15.1, limitKw: 18 },
-  { time: '22h', demandKw: 8.4, limitKw: 18 },
-  { time: '00h', demandKw: 4.6, limitKw: 18 },
-];
+// DemandStateData e DemandPoint vêm agora da API (backend/app/schemas.py:
+// DemandaOut e DemandPointOut) — ver lib/api.ts. Os tipos ficam re-exportados
+// aqui para os componentes de UI que já os importavam deste módulo.
+export type { DemandaResponse as DemandStateData, DemandPoint } from '../lib/api';
