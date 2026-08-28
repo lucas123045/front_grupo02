@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageContainer, PageHeader } from '../components/layout/PageContainer';
 import { Card, CardHeader } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
@@ -7,15 +7,25 @@ import { CHARGE_TYPES, type ChargeType } from '../mock/types';
 import { useSessions } from '../context/SessionsContext';
 import { createSession, type NovaSessaoResponse } from '../lib/api';
 
-// Cada carro é criado via POST /api/sessions, atendido pelo backend FastAPI
-// que porta Carros.py + equacoesRecarga.py + sistemaCobranca.py + SimuladorOCPP.py
-// (Data Structures Sprint). A fatura retornada na criação é uma estimativa —
-// o backend avança a simulação (bateria, redistribuição de demanda) 1x por
-// segundo, e o SessionsContext faz polling para refletir o progresso real.
+// Cada carro é criado via start_session() no Supabase (porta de Carros.py +
+// equacoesRecarga.py + sistemaCobranca.py + SimuladorOCPP.py, Data Structures
+// Sprint). A fatura retornada na criação é uma estimativa — a bateria segue
+// evoluindo no banco (ver charge_sessions_live), e o SessionsContext faz
+// polling para refletir o progresso real.
 
 const inputClass =
   'w-full rounded-lg border border-border-soft bg-surface-2 px-3.5 py-2.5 text-sm text-text outline-none focus:border-magenta';
 const labelClass = 'mb-1.5 block text-xs font-medium uppercase tracking-wide text-text-faint';
+
+function formatDuracao(horas: number): string {
+  if (!isFinite(horas) || horas <= 0) return '—';
+  const totalMin = Math.round(horas * 60);
+  const h = Math.floor(totalMin / 60);
+  const m = totalMin % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
 
 export default function NovaSessao() {
   const { sessions, refresh } = useSessions();
@@ -26,14 +36,20 @@ export default function NovaSessao() {
   const [nome, setNome] = useState('');
   const [modelo, setModelo] = useState('');
   const [tipoRecarga, setTipoRecarga] = useState<ChargeType>('rapida');
+  const [capacidadeKwh, setCapacidadeKwh] = useState(60);
+
+  const tempoCargaCompleta = useMemo(
+    () => capacidadeKwh / CHARGE_TYPES[tipoRecarga].maxPowerKw,
+    [capacidadeKwh, tipoRecarga],
+  );
 
   async function adicionarCarro() {
-    if (!nome.trim() || !modelo.trim() || enviando) return;
+    if (!nome.trim() || !modelo.trim() || enviando || capacidadeKwh <= 0) return;
 
     setEnviando(true);
     setErro(null);
     try {
-      const novaSessao = await createSession({ nome, modelo, tipoRecarga });
+      const novaSessao = await createSession({ nome, modelo, tipoRecarga, capacidadeKwh });
       setResposta(novaSessao);
       setNome('');
       setModelo('');
@@ -46,13 +62,14 @@ export default function NovaSessao() {
   }
 
   const fatura = resposta?.fatura ?? null;
+  const tempoSessaoReal = resposta ? resposta.session.energyKwh / resposta.session.avgPowerKw : null;
 
   return (
     <PageContainer>
       <PageHeader
         eyebrow="Nova sessão"
         title="Nova sessão de recarga"
-        description="Cadastra um veículo no backend FastAPI (porta de gerenciamentoDeRecarga.py) e inicia a sessão via OCPP StartTransaction."
+        description="Cadastra um veículo no Supabase (função start_session, porta de gerenciamentoDeRecarga.py) e inicia a sessão via OCPP StartTransaction."
       />
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
@@ -81,8 +98,27 @@ export default function NovaSessao() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className={labelClass}>Capacidade da bateria (kWh)</label>
+              <input
+                type="number"
+                min={1}
+                max={300}
+                step={1}
+                className={inputClass}
+                value={capacidadeKwh}
+                onChange={(e) => setCapacidadeKwh(Number(e.target.value))}
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border border-border-soft bg-surface-2 px-3.5 py-3">
+              <span className="text-sm text-text-muted">Tempo estimado p/ carga completa (0→100%)</span>
+              <span className="font-mono text-sm text-text">{formatDuracao(tempoCargaCompleta)}</span>
+            </div>
+
             <p className="text-xs text-text-faint">
-              Bateria e capacidade do veículo são sorteadas pelo backend (mesma regra de Carros.py).
+              O nível de bateria inicial do veículo é sorteado pelo backend (mesma regra de Carros.py) — por
+              isso a sessão criada pode levar menos tempo que a estimativa acima.
             </p>
             {erro && <p className="text-xs text-red">{erro}</p>}
             <Button variant="primary" className="w-full justify-center" onClick={adicionarCarro} disabled={enviando}>
@@ -116,6 +152,10 @@ export default function NovaSessao() {
               <div className="flex items-center justify-between rounded-lg bg-surface-3 px-3.5 py-3">
                 <span className="text-sm text-text">Total estimado</span>
                 <span className="font-mono text-lg font-semibold text-text">R$ {fatura.totalBrl.toFixed(2).replace('.', ',')}</span>
+              </div>
+              <div className="flex items-center justify-between rounded-lg border border-border-soft bg-surface-2 px-3.5 py-3">
+                <span className="text-sm text-text-muted">Tempo de carregamento desta sessão</span>
+                <span className="font-mono text-sm text-text">{formatDuracao(tempoSessaoReal ?? 0)}</span>
               </div>
               <p className="text-[11px] text-text-faint">
                 Estimativa calculada na criação da sessão. O valor final é ajustado quando a sessão é concluída (bateria atinge 100%).

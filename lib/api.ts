@@ -84,6 +84,7 @@ export interface NovaSessaoPayload {
   nome: string;
   modelo: string;
   tipoRecarga: ChargeType;
+  capacidadeKwh: number;
 }
 
 export interface NovaSessaoResponse {
@@ -96,6 +97,7 @@ export async function createSession(payload: NovaSessaoPayload): Promise<NovaSes
     p_client_name: payload.nome,
     p_vehicle_model: payload.modelo,
     p_charge_type: payload.tipoRecarga,
+    p_battery_capacity_kwh: payload.capacidadeKwh,
   });
   if (error) throw new Error(`Supabase start_session(): ${error.message}`);
 
